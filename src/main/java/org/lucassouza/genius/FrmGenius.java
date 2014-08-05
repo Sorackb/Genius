@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.lucassouza.genius;
 
 import java.awt.Color;
@@ -19,120 +14,131 @@ import javax.swing.JOptionPane;
  */
 public class FrmGenius extends javax.swing.JFrame {
 
-  private final List<Integer> ordemJogador = new ArrayList<>();
-  private final List<Integer> ordemMaquina = new ArrayList<>();
-  private Boolean bloqueado = false;
+  private final List<Integer> playerOrder = new ArrayList<>();
+  private final List<Integer> machineOrder = new ArrayList<>();
+  private Integer greaterSuccess = 0;
+  private Boolean blocked = false;
 
-  private class Animacao extends Thread {
+  private class Animation extends Thread {
 
     @Override
     public void run() {
+      Long waitingTime = 1000L / machineOrder.size();
+
+      // Não permite que o tempo fique menor que 100 milissegundos
+      if (waitingTime < 100L) {
+        waitingTime = 100L;
+      }
+
       // Bloqueia o acesso ao usuário
-      setBloqueado(true);
+      setBlocked(true);
       try {
         Thread.sleep(500);
 
-        for (Integer ordemBotao : getOrdemMaquina()) {
+        for (Integer buttonOrder : machineOrder) {
           // Limpa as cores para dar um efeito de piscar
-          limparCores();
-          Thread.sleep(500);
-          mudarCor(ordemBotao);
-          Thread.sleep(500);
+          clearColors();
+          Thread.sleep(waitingTime);
+          changeColor(buttonOrder);
+          Thread.sleep(waitingTime);
         }
+        // Nunca vai acontecer esse problema
       } catch (InterruptedException ex) {
         Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
       }
 
-      limparCores();
+      clearColors();
       // Desbloqueia para ação do usuário
-      setBloqueado(false);
+      setBlocked(false);
     }
   }
 
   public FrmGenius() {
     initComponents();
-    this.limparCores();
+    this.setBlocked(true);
+    this.clearColors();
   }
 
-  private void iniciar() {
-    this.getOrdemMaquina().clear();
-    this.adicionar();
+  private void start() {
+    this.machineOrder.clear();
+    this.addMachine();
   }
 
-  private void selecionar(Integer ordemBotao) {
+  private void select(Integer buttonOrder) {
     // Para impedir que o usuário aperte os botões quando a máquina estiver mostrando a nova sequência
-    if (!bloqueado) {
-      this.ordemJogador.add(ordemBotao);
-      this.mudarCor(ordemBotao);
+    if (!blocked) {
+      this.playerOrder.add(buttonOrder);
+      this.changeColor(buttonOrder);
       // Avisa o método qual a posição que deve verificar
-      this.comparar(this.ordemJogador.size() - 1);
+      this.compare(this.playerOrder.size() - 1);
     }
   }
 
-  private void comparar(Integer posicao) {
+  private void compare(Integer position) {
+    Integer currentSuccess = this.playerOrder.size() + 1;
+
     // Quer dizer que ele errou
-    if (this.ordemJogador.get(posicao) != this.getOrdemMaquina().get(posicao)) {
-      JOptionPane.showMessageDialog(this, "Você errou na " + String.valueOf(
-              this.ordemJogador.size() + 1) + "ª posição!\nIniciando novamente",
-              "Erro!", JOptionPane.WARNING_MESSAGE);
-      this.iniciar();
-    } else if (this.ordemJogador.size() == this.getOrdemMaquina().size()) {
-      this.adicionar();
+    if (!this.playerOrder.get(position).equals(this.machineOrder.get(position))) {
+      if (this.greaterSuccess < currentSuccess) {
+        this.greaterSuccess = currentSuccess;
+      }
+      JOptionPane.showMessageDialog(this, "Você errou na " + (this.playerOrder.size() + 1)
+              + "ª posição!\nO seu maior acerto foi de " + this.greaterSuccess
+              + " posições.\nIniciando novamente", "Erro!", JOptionPane.WARNING_MESSAGE);
+      this.start();
+    } else if (this.playerOrder.size() == this.machineOrder.size()) {
+      this.addMachine();
     }
   }
 
-  private void adicionar() {
-    Random randomico = new Random();
-    Animacao animacao = new Animacao();
+  private void addMachine() {
+    Random random = new Random();
+    Animation animation = new Animation();
 
     // Cria um valor de 0 até 3 randomico
-    this.getOrdemMaquina().add(randomico.nextInt(4));
+    this.machineOrder.add(random.nextInt(4));
 
     // Inicia a animação
-    animacao.start();
+    animation.start();
     // Zera porque o jogador deve clicar desde o começo novamente
-    this.ordemJogador.clear();
+    this.playerOrder.clear();
   }
 
   // Public porque é usado na Thread que faz a animação
-  public void mudarCor(Integer ordemBotao) {
-    this.limparCores();
+  public void changeColor(Integer buttonOrder) {
+    this.clearColors();
 
-    switch (ordemBotao) {
+    switch (buttonOrder) {
       case 0:
-        this.btnVermelho.setBackground(Color.RED);
+        this.btnRed.setBackground(Color.RED);
         break;
       case 1:
-        this.btnAzul.setBackground(Color.BLUE);
+        this.btnBlue.setBackground(Color.BLUE);
         break;
       case 2:
-        this.btnVerde.setBackground(Color.GREEN);
+        this.btnGreen.setBackground(Color.GREEN);
         break;
       default:
-        this.btnAmarelo.setBackground(Color.YELLOW);
+        this.btnYellow.setBackground(Color.YELLOW);
     }
   }
 
   // Public porque é usado na Thread que faz a animação
-  public void limparCores() {
-    Color cor = Color.LIGHT_GRAY;
+  public void clearColors() {
+    Color color = Color.LIGHT_GRAY;
 
-    this.btnVermelho.setBackground(cor);
-    this.btnAzul.setBackground(cor);
-    this.btnVerde.setBackground(cor);
-    this.btnAmarelo.setBackground(cor);
-  }
-
-  public List<Integer> getOrdemMaquina() {
-    return ordemMaquina;
+    this.btnRed.setBackground(color);
+    this.btnBlue.setBackground(color);
+    this.btnGreen.setBackground(color);
+    this.btnYellow.setBackground(color);
   }
 
   public Boolean getBloqueado() {
-    return bloqueado;
+    return blocked;
   }
 
-  public void setBloqueado(Boolean bloqueado) {
-    this.bloqueado = bloqueado;
+  public void setBlocked(Boolean blocked) {
+    this.blocked = blocked;
   }
 
   /**
@@ -145,19 +151,19 @@ public class FrmGenius extends javax.swing.JFrame {
   private void initComponents() {
     java.awt.GridBagConstraints gridBagConstraints;
 
-    btnVermelho = new javax.swing.JButton();
-    btnVerde = new javax.swing.JButton();
-    btnAmarelo = new javax.swing.JButton();
-    btnAzul = new javax.swing.JButton();
-    btnIniciar = new javax.swing.JButton();
+    btnRed = new javax.swing.JButton();
+    btnGreen = new javax.swing.JButton();
+    btnYellow = new javax.swing.JButton();
+    btnBlue = new javax.swing.JButton();
+    btnStart = new javax.swing.JButton();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
     getContentPane().setLayout(new java.awt.GridBagLayout());
 
-    btnVermelho.setText("1");
-    btnVermelho.addActionListener(new java.awt.event.ActionListener() {
+    btnRed.setText("1");
+    btnRed.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
-        btnVermelhoActionPerformed(evt);
+        btnRedActionPerformed(evt);
       }
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
@@ -167,12 +173,12 @@ public class FrmGenius extends javax.swing.JFrame {
     gridBagConstraints.ipadx = 131;
     gridBagConstraints.ipady = 127;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-    getContentPane().add(btnVermelho, gridBagConstraints);
+    getContentPane().add(btnRed, gridBagConstraints);
 
-    btnVerde.setText("3");
-    btnVerde.addActionListener(new java.awt.event.ActionListener() {
+    btnGreen.setText("3");
+    btnGreen.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
-        btnVerdeActionPerformed(evt);
+        btnGreenActionPerformed(evt);
       }
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
@@ -182,12 +188,12 @@ public class FrmGenius extends javax.swing.JFrame {
     gridBagConstraints.ipadx = 131;
     gridBagConstraints.ipady = 121;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-    getContentPane().add(btnVerde, gridBagConstraints);
+    getContentPane().add(btnGreen, gridBagConstraints);
 
-    btnAmarelo.setText("4");
-    btnAmarelo.addActionListener(new java.awt.event.ActionListener() {
+    btnYellow.setText("4");
+    btnYellow.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
-        btnAmareloActionPerformed(evt);
+        btnYellowActionPerformed(evt);
       }
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
@@ -197,24 +203,24 @@ public class FrmGenius extends javax.swing.JFrame {
     gridBagConstraints.ipadx = 131;
     gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
     gridBagConstraints.weighty = 0.5;
-    getContentPane().add(btnAmarelo, gridBagConstraints);
+    getContentPane().add(btnYellow, gridBagConstraints);
 
-    btnAzul.setText("2");
-    btnAzul.addActionListener(new java.awt.event.ActionListener() {
+    btnBlue.setText("2");
+    btnBlue.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
-        btnAzulActionPerformed(evt);
+        btnBlueActionPerformed(evt);
       }
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
     gridBagConstraints.gridx = 1;
     gridBagConstraints.gridy = 1;
     gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-    getContentPane().add(btnAzul, gridBagConstraints);
+    getContentPane().add(btnBlue, gridBagConstraints);
 
-    btnIniciar.setText("Iniciar");
-    btnIniciar.addActionListener(new java.awt.event.ActionListener() {
+    btnStart.setText("Iniciar");
+    btnStart.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
-        btnIniciarActionPerformed(evt);
+        btnStartActionPerformed(evt);
       }
     });
     gridBagConstraints = new java.awt.GridBagConstraints();
@@ -222,30 +228,30 @@ public class FrmGenius extends javax.swing.JFrame {
     gridBagConstraints.gridy = 0;
     gridBagConstraints.gridwidth = 2;
     gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-    getContentPane().add(btnIniciar, gridBagConstraints);
+    getContentPane().add(btnStart, gridBagConstraints);
 
     pack();
   }// </editor-fold>//GEN-END:initComponents
 
-  private void btnAmareloActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAmareloActionPerformed
-    this.selecionar(3);
-  }//GEN-LAST:event_btnAmareloActionPerformed
+  private void btnYellowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnYellowActionPerformed
+    this.select(3);
+  }//GEN-LAST:event_btnYellowActionPerformed
 
-  private void btnVermelhoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVermelhoActionPerformed
-    this.selecionar(0);
-  }//GEN-LAST:event_btnVermelhoActionPerformed
+  private void btnRedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRedActionPerformed
+    this.select(0);
+  }//GEN-LAST:event_btnRedActionPerformed
 
-  private void btnAzulActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAzulActionPerformed
-    this.selecionar(1);
-  }//GEN-LAST:event_btnAzulActionPerformed
+  private void btnBlueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBlueActionPerformed
+    this.select(1);
+  }//GEN-LAST:event_btnBlueActionPerformed
 
-  private void btnVerdeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVerdeActionPerformed
-    this.selecionar(2);
-  }//GEN-LAST:event_btnVerdeActionPerformed
+  private void btnGreenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGreenActionPerformed
+    this.select(2);
+  }//GEN-LAST:event_btnGreenActionPerformed
 
-  private void btnIniciarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIniciarActionPerformed
-    this.iniciar();
-  }//GEN-LAST:event_btnIniciarActionPerformed
+  private void btnStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartActionPerformed
+    this.start();
+  }//GEN-LAST:event_btnStartActionPerformed
 
   /**
    * @param args the command line arguments
@@ -277,20 +283,20 @@ public class FrmGenius extends javax.swing.JFrame {
     /* Create and display the form */
     java.awt.EventQueue.invokeLater(new Runnable() {
       public void run() {
-        FrmGenius formulario = new FrmGenius();
+        FrmGenius form = new FrmGenius();
 
         // Centraliza o formulário
-        formulario.setLocationRelativeTo(null);
-        formulario.setVisible(true);
+        form.setLocationRelativeTo(null);
+        form.setVisible(true);
       }
     });
   }
 
   // Variables declaration - do not modify//GEN-BEGIN:variables
-  private javax.swing.JButton btnAmarelo;
-  private javax.swing.JButton btnAzul;
-  private javax.swing.JButton btnIniciar;
-  private javax.swing.JButton btnVerde;
-  private javax.swing.JButton btnVermelho;
+  private javax.swing.JButton btnBlue;
+  private javax.swing.JButton btnGreen;
+  private javax.swing.JButton btnRed;
+  private javax.swing.JButton btnStart;
+  private javax.swing.JButton btnYellow;
   // End of variables declaration//GEN-END:variables
 }
